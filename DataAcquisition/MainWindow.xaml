@@ -1,0 +1,27 @@
+﻿<Window x:Class="DataAcquisition.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DataAcquisition"
+        mc:Ignorable="d"
+        Title="Data Acquisition Helper" Height="342.188" Width="737.188" Background="#FFDAD9D9">
+    <Grid>
+        <Label x:Name="lblComPort" Content="COM PORT" HorizontalAlignment="Left" Height="26" Margin="29,24,0,0" VerticalAlignment="Top" Width="106"/>
+        <ComboBox x:Name="cBoxComPort" ItemsSource="{Binding ComPorts}" HorizontalAlignment="Left" Height="26" Margin="140,24,0,0" VerticalAlignment="Top" Width="106"/>
+        <Label x:Name="lblBaudRate" Content="BAUD RATE" HorizontalAlignment="Left" Height="26" Margin="29,60,0,0" VerticalAlignment="Top" Width="106"/>
+        <ComboBox x:Name="cBoxBaudRate" ItemsSource="{Binding BaudRates}"  HorizontalAlignment="Left" Height="26" Margin="140,60,0,0" VerticalAlignment="Top" Width="106"/>
+        <Label x:Name="lblDataBits" Content="DATA BITS" HorizontalAlignment="Left" Height="26" Margin="29,98,0,0" VerticalAlignment="Top" Width="106"/>
+        <ComboBox x:Name="cBoxDataBits" ItemsSource="{Binding DataBits}" HorizontalAlignment="Left" Height="26" Margin="140,98,0,0" VerticalAlignment="Top" Width="106"/>
+        <Label x:Name="lblStopBits" Content="STOP BITS" HorizontalAlignment="Left" Height="26" Margin="29,134,0,0" VerticalAlignment="Top" Width="106"/>
+        <ComboBox x:Name="cBoxStopBits" ItemsSource="{Binding StpBts}"  HorizontalAlignment="Left" Height="26" Margin="140,134,0,0" VerticalAlignment="Top" Width="106"/>
+        <Label x:Name="lblStopBits_Copy" Content="PARITY BITS" HorizontalAlignment="Left" Height="26" Margin="29,171,0,0" VerticalAlignment="Top" Width="106"/>
+        <ComboBox x:Name="cBoxParityBits" ItemsSource="{Binding ParityBits}"  HorizontalAlignment="Left" Height="26" Margin="140,171,0,0" VerticalAlignment="Top" Width="106"/>
+        <Button x:Name="btnOpenPort" Content="OPEN PORT" HorizontalAlignment="Left" Height="32" Margin="18,215,0,0" VerticalAlignment="Top" Width="82" Click="OpenPort"/>
+        <TextBox x:Name="tBoxDataOut" HorizontalAlignment="Left" Height="223" Margin="308,24,0,0" VerticalScrollBarVisibility="Visible" TextWrapping="Wrap" VerticalAlignment="Top" Width="387"/>
+        <Button x:Name="btnWriteS" Content="WRITE S" HorizontalAlignment="Left" Height="32" Margin="112,215,0,0" VerticalAlignment="Top" Width="82" Click="WriteS"/>
+        <Button x:Name="btnWriteA" Content="WRITE C" HorizontalAlignment="Left" Height="32" Margin="206,215,0,0" VerticalAlignment="Top" Width="82" Click="WriteA"/>
+        <Button x:Name="btnSaveData" Content="SAVE DATA FILE" HorizontalAlignment="Left" Height="32" Margin="452,258,0,0" VerticalAlignment="Top" Width="91" Click="SaveDataToFile"/>
+
+    </Grid>
+</Window>
