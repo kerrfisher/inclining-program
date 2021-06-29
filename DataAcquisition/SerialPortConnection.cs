@@ -1,8 +1,10 @@
-﻿using System;
+﻿using DataAcquisition.Model;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows;
@@ -28,6 +30,9 @@ namespace DataAcquisition
         private string letter;
 
         private bool isFirstReading = false;
+
+        // List of heel and pitch for calibration run
+        public List<Motions> calibrationMotions = new List<Motions>();
 
         public SerialPortConnection(string expectedComPort, int expectedBaudRate, int expectedDataBit, StopBits expectedStopBit, Parity expectedParity, string toWrite, MainWindow mw)
         {
@@ -57,22 +62,11 @@ namespace DataAcquisition
             serialPort.Open();
             mainWindow.MarkDeviceAsConnected();
 
-            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
-            {
-                if (mainWindow.testCounter == 0)
-                {
-                    mainWindow.tBoxDataOut.Text += "Calibrating...\n";
-                }
-                else
-                {
-                    serialPortTimer.Change(500,0);
-                }
+            // Write "S" to retrieve serial number
+            serialPort.WriteLine(letter);
 
-                mainWindow.testCounter++;
-            }));
-            
-
-            serialPortTimer = new Timer(Callback, null, 5000, Timeout.Infinite);
+            // Read serial number from port
+            serialPortTimer = new Timer(Open, null, 1000, Timeout.Infinite);
         }
 
         private string FindCorrectPort()
@@ -87,7 +81,7 @@ namespace DataAcquisition
             }
 
             return string.Empty;
-        }        
+        }
 
         private bool TryEstablishConnection(SerialPort sp)
         {
@@ -126,21 +120,17 @@ namespace DataAcquisition
             {
                 Application.Current.Dispatcher.BeginInvoke((Action)(() =>
                 {
-                    if (isFirstReading)
-                    {
-                        isFirstReading = false;
-                    }
-                    else
-                    {
-                        mainWindow.tBoxDataOut.AppendText(data);
-                    }
+                    // Append data to TextBox in MainWindow
+                    mainWindow.tBoxDataOut.AppendText(data);
+                    // Scroll to end of view
+                    mainWindow.tBoxDataOut.ScrollToEnd();
 
-                    mainWindow.tBoxDataOut.ScrollToEnd();               
-
+                    // Split data into heel and pitch
                     string[] dataIn = data.Split(' ');
 
-                    if(dataIn.Length == 2)
+                    if (dataIn.Length == 2)
                     {
+                        // Add data to list of heel and pitch in mainWindow
                         mainWindow.roll.Add(Convert.ToDouble(dataIn[0]));
                         mainWindow.pitch.Add(Convert.ToDouble(dataIn[1]));
                     }
@@ -155,6 +145,101 @@ namespace DataAcquisition
             serialPortTimer = new Timer(Callback, null, 500, Timeout.Infinite);
         }
 
+        // Calibration should run for 5 minutes
+        private void Calibration(object state)
+        {
+            // Read port buffer/stream
+            string data = serialPort.ReadExisting();
+
+            // Limit equaling 5 minutes
+            int calibrationLimit = 600;
+
+            try
+            {
+                Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    // Only continue if calibration motions count is less than the limit
+                    if (calibrationMotions.Count() < calibrationLimit)
+                    {
+                        // Append buffer/stream contents to TextBox in MainWindow
+                        mainWindow.tBoxDataOut.AppendText(data.Replace("\r", "") + "\t" + DateTime.Now.ToString("HH:mm:ss.fff\n"));
+                        // Scroll to end of view
+                        mainWindow.tBoxDataOut.ScrollToEnd();
+
+                        // Split data and add to motions list
+                        string[] dataIn = data.Split(' ');
+                        if (dataIn.Length == 2)
+                        {
+                            calibrationMotions.Add(new Motions(Convert.ToDouble(dataIn[0]), Convert.ToDouble(dataIn[1])));
+                        }
+                    }
+                    else
+                    {
+                        // When calibration is finished print average etc.
+                        mainWindow.tBoxDataOut.AppendText("Averages: " + Math.Round(calibrationMotions.Average(x => x.Heel) / 60, 2) + "deg, " + Math.Round(calibrationMotions.Average(x => x.Pitch) / 60, 2) + "deg\n");
+                        mainWindow.tBoxDataOut.AppendText("Calibration run ended at: " + DateTime.Now.ToString("HH:mm:ss.fff\n"));
+                        // Dispose of the timer, so as to stop recording
+                        serialPortTimer.Dispose();
+
+                        // Enable the start and stop buttons
+                        mainWindow.btnStart.IsEnabled = true;
+                        mainWindow.btnStop.IsEnabled = true;
+
+                        // Disable the calibration button
+                        mainWindow.btnCalibration.IsEnabled = false;
+                    }
+                }));
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\nUnknown command.");
+            }
+
+            // Repeat
+            serialPort.WriteLine(letter);
+            serialPortTimer = new Timer(Calibration, null, 500, Timeout.Infinite);
+        }
+
+        // Calibration should run for 5 minutes
+        private void Open(object state)
+        {
+            // Dispose of last timer
+            serialPortTimer.Dispose();
+
+            // Read port buffer/stream
+            string data = serialPort.ReadExisting();
+
+            try
+            {
+                Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    // Append buffer/stream contents to TextBox in MainWindow
+                    mainWindow.tBoxDataOut.AppendText(data);
+                    // Scroll to end of view
+                    mainWindow.tBoxDataOut.ScrollToEnd();
+                }));
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message + "\nUnknown command.");
+            }
+        }
+
+        public void StartCalibration(string letter)
+        {
+            // Assign letter "S"
+            this.letter = letter;
+
+            // Dispose of last timer
+            serialPortTimer.Dispose();
+
+            // Write "S" to retrieve serial number
+            serialPort.WriteLine(letter);
+
+            // Start new timer with different callback
+            serialPortTimer = new Timer(Calibration, null, 500, Timeout.Infinite);
+        }
+
         internal void TerminateConnection()
         {
             serialPortTimer.Dispose();
@@ -162,10 +247,14 @@ namespace DataAcquisition
             serialPort.Dispose();
         }
 
-        internal void WriteA()
+        public void StopRecording()
         {
-            this.letter = "C";
-            isFirstReading = true;
+            serialPortTimer.Dispose();
+        }
+
+        internal void WriteC()
+        {
+            letter = "C";
             serialPortTimer = new Timer(Callback, null, 500, Timeout.Infinite);
         }
 

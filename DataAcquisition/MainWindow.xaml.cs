@@ -28,18 +28,18 @@ namespace DataAcquisition
         private bool isDeviceConnected = false;
         private string expectedDeviceName = "Serial No. 0101";
 
-        // setting variables
+        // Setting variables
         private string expectedComPort;
         private int expectedBaudRate;
         private int expectedDataBit;
         private StopBits expectedStopBit;
         private Parity expectedParity;
 
-        // available com ports
+        // Available com ports
         public List<string> ComPorts { get; set; }
         public List<int> BaudRates { get; set; }
         public List<int> DataBits { get; set; }
-        public List<int> StpBts { get; set; }
+        public List<int> StopBits { get; set; }
         public List<string> ParityBits { get; set; }
 
         private string fileName;
@@ -57,8 +57,9 @@ namespace DataAcquisition
 
             FillComboBoxes();
 
-            btnWriteS.IsEnabled = false;
-            btnWriteA.IsEnabled = false;
+            btnCalibration.IsEnabled = false;
+            btnStart.IsEnabled = false;
+            btnStop.IsEnabled = false;
 
             DataContext = this;
 
@@ -82,41 +83,36 @@ namespace DataAcquisition
             //    isDeviceConnected = false;
             //}
 
-            expectedComPort = cBoxComPort.Text;
-            expectedBaudRate = Convert.ToInt32(cBoxBaudRate.Text);
-            expectedDataBit = Convert.ToInt32(cBoxDataBits.Text);
-            expectedStopBit = (StopBits)Enum.Parse(typeof(StopBits), cBoxStopBits.Text);
-            expectedParity = (Parity)Enum.Parse(typeof(Parity), cBoxParityBits.Text);
-
-            if (cBoxComPort.SelectedItem != null)
+            if (cBoxComPort.SelectedItem != null && cBoxBaudRate.SelectedItem != null && cBoxDataBits.SelectedItem != null && cBoxStopBits.SelectedItem != null && cBoxParityBits.SelectedItem != null)
             {
+                expectedComPort = cBoxComPort.Text;
+                expectedBaudRate = Convert.ToInt32(cBoxBaudRate.Text);
+                expectedDataBit = Convert.ToInt32(cBoxDataBits.Text);
+                expectedStopBit = (StopBits)Enum.Parse(typeof(StopBits), cBoxStopBits.Text);
+                expectedParity = (Parity)Enum.Parse(typeof(Parity), cBoxParityBits.Text);
+
                 if (!isDeviceConnected)
                 {
-                    WritePortOpen("Port opened at: " + DateTime.Now.ToString("h:mm:ss tt"));
+                    WritePortOpen("Open port button pressed at: " + DateTime.Now.ToString("h:mm:ss tt"));
+
+                    btnOpenPort.Content = "OPENING...";
 
                     Thread dataReading = new Thread(() =>
                     {
-                        serialPortTestConnection = new SerialPortConnection(expectedComPort, expectedBaudRate, expectedDataBit, expectedStopBit, expectedParity, "C", this);
+                        serialPortTestConnection = new SerialPortConnection(expectedComPort, expectedBaudRate, expectedDataBit, expectedStopBit, expectedParity, "S", this);
                     });
-                    dataReading.Name = "Data Gettings";
                     dataReading.Start();
-                    btnWriteS.IsEnabled = true;
-                    btnWriteA.IsEnabled = true;
+
+                    btnCalibration.IsEnabled = true;
                 }
                 else
                 {
                     serialPortTestConnection.TerminateConnection();
                     Thread.Sleep(100);
                     MarkDeviceAsDisconnected();
-                    btnWriteS.IsEnabled = false;
-                    btnWriteA.IsEnabled = false;
-
-                    for (int i = 0; i < roll.Count; i++)
-                    {
-                        Debug.WriteLine(roll[i] + ", " + pitch[i]);
-                    }
-                    Debug.WriteLine(roll.Average() + ", " + pitch.Average());
-
+                    btnCalibration.IsEnabled = false;
+                    btnStart.IsEnabled = false;
+                    btnStop.IsEnabled = false;
                 }
             }
             else
@@ -157,6 +153,8 @@ namespace DataAcquisition
                 isDeviceConnected = true;
                 btnOpenPort.Content = "CLOSE PORT";
 
+                // Display time port opened in TexBox
+                tBoxDataOut.AppendText("Port opened at: " + DateTime.Now.ToString("HH:mm:ss.fff\n"));
             });
         }
 
@@ -166,6 +164,7 @@ namespace DataAcquisition
             {
                 isDeviceConnected = false;
                 btnOpenPort.Content = "OPEN PORT";
+                tBoxDataOut.AppendText("\nPort closed at: " + DateTime.Now.ToString("h:mm:ss tt"));
             });
         }
 
@@ -215,7 +214,7 @@ namespace DataAcquisition
         private void WriteA(object sender, RoutedEventArgs e)
         {
             // Comment next line out to test without MOSIS
-            serialPortTestConnection.WriteA();
+            serialPortTestConnection.WriteC();
             tBoxDataOut.Text += "Inclinimoter data started at: " + DateTime.Now.ToString("h:mm:ss tt\n");
             //WriteCtoFile("Inclinimoter data started at: " + DateTime.Now.ToString("h:mm:ss tt"));
         }
@@ -254,7 +253,7 @@ namespace DataAcquisition
                 8
             };
 
-            StpBts = new List<int>
+            StopBits = new List<int>
             {
                 1,
                 2
@@ -275,8 +274,11 @@ namespace DataAcquisition
                 using (StreamWriter file = new StreamWriter(fileName, true))
                 {
                     file.WriteLine(tBoxDataOut.Text);
-                    file.WriteLine("Averages: " + Math.Round(roll.Average() / 60, 2) + "deg, " + Math.Round(pitch.Average() / 60, 2) + "deg\n");
-                    file.WriteLine("Port closed at: " + DateTime.Now.ToString("h:mm:ss tt"));
+                    if(roll.Count != 0 && pitch.Count != 0)
+                    {
+                        file.WriteLine("Averages: " + Math.Round(roll.Average() / 60, 2) + "deg, " + Math.Round(pitch.Average() / 60, 2) + "deg\n");
+                    }
+                    file.WriteLine("File saved at: " + DateTime.Now.ToString("h:mm:ss tt"));
                 }
 
                 MessageBox.Show("File saved as: " + fileName, "File saved successfully.", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -286,6 +288,34 @@ namespace DataAcquisition
             {
                 MessageBox.Show("Error: " + ex.Message, "Could not create file.", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+        }
+
+        private void Calibration(object sender, RoutedEventArgs e)
+        {
+            tBoxDataOut.AppendText("Calibrating... Please do not shut down the program whilst calibration is in progress.\n");
+            tBoxDataOut.AppendText("Calibration run started at: " + DateTime.Now.ToString("HH:mm:ss.fff\n"));
+            tBoxDataOut.ScrollToEnd();
+
+            serialPortTestConnection.StartCalibration("C");
+        }
+
+        private void StartRecording(object sender, RoutedEventArgs e)
+        {
+            tBoxDataOut.AppendText("\nInclinimoter data started at: " + DateTime.Now.ToString("HH:mm:ss.fff\n"));
+            // Start recording inclinometer data
+            serialPortTestConnection.WriteC();
+        }
+
+        private void StopRecording(object sender, RoutedEventArgs e)
+        {
+            serialPortTestConnection.StopRecording();
+
+            tBoxDataOut.AppendText("\nInclinimoter data stopped at: " + DateTime.Now.ToString("HH:mm:ss.fff\n"));
+            tBoxDataOut.ScrollToEnd();
+            tBoxDataOut.AppendText("Averages: " + Math.Round(roll.Average() / 60, 2) + "deg, " + Math.Round(pitch.Average() / 60, 2) + "deg\n");
+
+            roll.Clear();
+            pitch.Clear();
         }
     }
 }

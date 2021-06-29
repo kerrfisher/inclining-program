@@ -14,14 +14,15 @@
         <Label x:Name="lblDataBits" Content="DATA BITS" HorizontalAlignment="Left" Height="26" Margin="29,98,0,0" VerticalAlignment="Top" Width="106"/>
         <ComboBox x:Name="cBoxDataBits" ItemsSource="{Binding DataBits}" HorizontalAlignment="Left" Height="26" Margin="140,98,0,0" VerticalAlignment="Top" Width="106"/>
         <Label x:Name="lblStopBits" Content="STOP BITS" HorizontalAlignment="Left" Height="26" Margin="29,134,0,0" VerticalAlignment="Top" Width="106"/>
-        <ComboBox x:Name="cBoxStopBits" ItemsSource="{Binding StpBts}"  HorizontalAlignment="Left" Height="26" Margin="140,134,0,0" VerticalAlignment="Top" Width="106"/>
+        <ComboBox x:Name="cBoxStopBits" ItemsSource="{Binding StopBits}"  HorizontalAlignment="Left" Height="26" Margin="140,134,0,0" VerticalAlignment="Top" Width="106"/>
         <Label x:Name="lblStopBits_Copy" Content="PARITY BITS" HorizontalAlignment="Left" Height="26" Margin="29,171,0,0" VerticalAlignment="Top" Width="106"/>
         <ComboBox x:Name="cBoxParityBits" ItemsSource="{Binding ParityBits}"  HorizontalAlignment="Left" Height="26" Margin="140,171,0,0" VerticalAlignment="Top" Width="106"/>
-        <Button x:Name="btnOpenPort" Content="OPEN PORT" HorizontalAlignment="Left" Height="32" Margin="18,215,0,0" VerticalAlignment="Top" Width="82" Click="OpenPort"/>
+        <Button x:Name="btnOpenPort" Content="OPEN PORT" HorizontalAlignment="Left" Height="32" Margin="29,215,0,0" VerticalAlignment="Top" Width="82" Click="OpenPort"/>
         <TextBox x:Name="tBoxDataOut" HorizontalAlignment="Left" Height="223" Margin="308,24,0,0" VerticalScrollBarVisibility="Visible" TextWrapping="Wrap" VerticalAlignment="Top" Width="387"/>
-        <Button x:Name="btnWriteS" Content="WRITE S" HorizontalAlignment="Left" Height="32" Margin="112,215,0,0" VerticalAlignment="Top" Width="82" Click="WriteS"/>
-        <Button x:Name="btnWriteA" Content="WRITE C" HorizontalAlignment="Left" Height="32" Margin="206,215,0,0" VerticalAlignment="Top" Width="82" Click="WriteA"/>
+        <Button x:Name="btnCalibration" Content="CALIBRATION" HorizontalAlignment="Left" Height="32" Margin="164,215,0,0" VerticalAlignment="Top" Width="82" Click="Calibration"/>
+        <Button x:Name="btnStart" Content="START" HorizontalAlignment="Left" Height="32" Margin="29,258,0,0" VerticalAlignment="Top" Width="82" Click="StartRecording"/>
         <Button x:Name="btnSaveData" Content="SAVE DATA FILE" HorizontalAlignment="Left" Height="32" Margin="452,258,0,0" VerticalAlignment="Top" Width="91" Click="SaveDataToFile"/>
+        <Button x:Name="btnStop" Content="STOP" HorizontalAlignment="Left" Height="32" Margin="164,258,0,0" VerticalAlignment="Top" Width="82" Click="StopRecording"/>
 
     </Grid>
 </Window>
